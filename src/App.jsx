@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   initGoogleAuth, signIn as googleSignIn, signOut as googleSignOut,
   isSignedIn as googleIsSignedIn, getMyEmail,
-  syncOppToCalendar, sendWeeklyDigest, getPersistedEmail,
+  syncOppToCalendar, getPersistedEmail,
 } from './google.js'
 import {
   supabase, signUpWithEmail, signInWithEmail, signOutUser,
@@ -228,11 +228,18 @@ export default function App() {
   }
 
   const handleDigest = async () => {
-    if (!googleIsSignedIn()) { showToast('Connect Google first','error'); return }
+    if (!session) return
+    const to = userEmail || session.user.email
     try {
-      await sendWeeklyDigest(opps, userEmail)
-      showToast(`Digest sent to ${userEmail}`,'success')
-    } catch(e) { showToast('Email failed: '+e.message,'error') }
+      const res = await fetch('/api/send-digest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ opps, userEmail: to }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      showToast(`Digest sent to ${to}`, 'success')
+    } catch(e) { showToast('Email failed: '+e.message, 'error') }
   }
 
   // ── CRUD ──

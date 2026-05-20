@@ -171,14 +171,14 @@ export async function createCalendarEvent({ summary, description, date, colorId 
 
 export async function deleteCalendarEvent(eventId) {
   if (!isSignedIn() || !eventId) return
-  try {
-    await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
-      { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } }
-    )
-  } catch (e) {
-    // Ignore 404s — event was already deleted or never existed
-    console.log('[JobTracker] Delete skipped (already gone):', eventId)
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } }
+  )
+  // 204 = deleted, 404 = already gone — both are fine
+  if (!res.ok && res.status !== 404) {
+    const body = await res.text()
+    throw new Error(`Calendar delete ${res.status}: ${body}`)
   }
 }
 
@@ -207,13 +207,13 @@ export async function createTask({ title, notes, due }) {
 export async function deleteTask(taskId) {
   if (!isSignedIn() || !taskId) return
   const listId = await getDefaultTaskListId()
-  try {
-    await fetch(
-      `https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks/${taskId}`,
-      { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } }
-    )
-  } catch (e) {
-    console.log('[JobTracker] Task delete skipped:', taskId)
+  const res = await fetch(
+    `https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks/${taskId}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${_accessToken}` } }
+  )
+  if (!res.ok && res.status !== 404) {
+    const body = await res.text()
+    throw new Error(`Task delete ${res.status}: ${body}`)
   }
 }
 

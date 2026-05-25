@@ -103,6 +103,9 @@ function appToDB(userId, opp) {
     recurring_reminder: opp.recurringReminder || 'none',
     link: opp.link || '',
     notes: opp.notes || '',
+    research_notes: opp.researchNotes || '',
+    cover_letter_link: opp.coverLetterLink || '',
+    resume_link: opp.resumeLink || '',
     calendar_event_ids: opp.calendarEventIds || {},
   }
   if (userId) row.user_id = userId
@@ -126,6 +129,9 @@ function dbToApp(row) {
     recurringReminder: row.recurring_reminder || 'none',
     link: row.link || '',
     notes: row.notes || '',
+    researchNotes: row.research_notes || '',
+    coverLetterLink: row.cover_letter_link || '',
+    resumeLink: row.resume_link || '',
     calendarEventIds: row.calendar_event_ids || {},
   }
 }

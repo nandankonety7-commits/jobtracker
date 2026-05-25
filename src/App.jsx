@@ -34,7 +34,8 @@ const REMINDER_OPTIONS = [
 const EMPTY_FORM = {
   org:'', role:'', type:'Think Tank', status:'Researching',
   deadline:'', appliedDate:'', followUps:[], interviewDate:'',
-  interviewNotes:'', recurringReminder:'none', link:'', notes:''
+  interviewNotes:'', recurringReminder:'none', link:'', notes:'',
+  researchNotes:'', coverLetterLink:'', resumeLink:''
 }
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -556,8 +557,10 @@ export default function App() {
                           {o.interviewNotes}
                         </div>
                       )}
-                      <div style={{display:'flex',gap:16,flexWrap:'wrap',marginBottom:(o.followUps||[]).length>0||o.notes?10:0,alignItems:'center'}}>
-                        {o.link&&<a href={o.link} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#7C9EFF',textDecoration:'none'}}>↗ Posting link</a>}
+                      <div style={{display:'flex',gap:16,flexWrap:'wrap',marginBottom:(o.followUps||[]).length>0||o.notes||o.researchNotes?10:0,alignItems:'center'}}>
+                        {o.link&&<a href={o.link} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#7C9EFF',textDecoration:'none'}}>↗ Posting</a>}
+                        {o.coverLetterLink&&<a href={o.coverLetterLink} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#A78BFA',textDecoration:'none'}}>📄 Cover letter</a>}
+                        {o.resumeLink&&<a href={o.resumeLink} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#34D399',textDecoration:'none'}}>📋 Resume</a>}
                         <div style={{fontSize:11,color:'#4d5470'}}>Quick move →</div>
                         {STATUSES.filter(s=>s!==o.status&&!s.startsWith('Interview')).map(s=>(
                           <button key={s} onClick={()=>quickStatus(o.id,s)} style={{background:'transparent',border:'1px solid #2d3044',color:'#9ba3bf',fontSize:11,padding:'2px 9px',borderRadius:4,cursor:'pointer'}}>
@@ -569,8 +572,14 @@ export default function App() {
                         )}
                         {hasCal&&<span style={{fontSize:11,color:'#34D399',marginLeft:'auto'}}>✓ Synced</span>}
                       </div>
+                      {o.researchNotes&&(
+                        <div style={{marginBottom:(o.followUps||[]).length>0||o.notes?10:0}}>
+                          <div style={{fontSize:10,color:'#7C9EFF',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:4}}>Research Notes</div>
+                          <div style={{fontSize:12,color:'#9ba3bf',lineHeight:1.7,maxWidth:680,background:'rgba(124,158,255,0.06)',border:'1px solid rgba(124,158,255,0.15)',borderRadius:6,padding:'8px 12px',whiteSpace:'pre-wrap'}}>{o.researchNotes}</div>
+                        </div>
+                      )}
                       {(o.followUps||[]).length>0&&(
-                        <div style={{marginTop:10,marginBottom:o.notes?10:0}}>
+                        <div style={{marginTop:0,marginBottom:o.notes?10:0}}>
                           <div style={{fontSize:10,color:'#4d5470',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>Follow-ups</div>
                           <div style={{display:'flex',flexDirection:'column',gap:5}}>
                             {[...(o.followUps||[])].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(fu=>{
@@ -663,6 +672,16 @@ export default function App() {
                 <div><div className="form-label">Posting Link</div><input value={form.link} onChange={e=>setForm(f=>({...f,link:e.target.value}))} placeholder="https://…"/></div>
               </div>
               <div><div className="form-label">Notes</div><textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Contacts, next steps, relevant details…"/></div>
+              <div style={{borderTop:'1px solid #1e2130',paddingTop:14,marginTop:2}}>
+                <div style={{fontSize:11,color:'#7C9EFF',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:12}}>Research & Documents</div>
+                <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                  <div><div className="form-label">Research Notes</div><textarea value={form.researchNotes||''} onChange={e=>setForm(f=>({...f,researchNotes:e.target.value}))} placeholder="Org background, key people, why you're a fit, talking points…" style={{minHeight:90}}/></div>
+                  <div className="form-row">
+                    <div><div className="form-label">Cover Letter Link</div><input value={form.coverLetterLink||''} onChange={e=>setForm(f=>({...f,coverLetterLink:e.target.value}))} placeholder="Google Doc, Dropbox, Drive…"/></div>
+                    <div><div className="form-label">Resume / CV Link</div><input value={form.resumeLink||''} onChange={e=>setForm(f=>({...f,resumeLink:e.target.value}))} placeholder="Google Doc, Dropbox, Drive…"/></div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div style={{display:'flex',gap:10,marginTop:22,justifyContent:'flex-end'}}>
               <button className="btn-ghost" onClick={closeForm}>Cancel</button>

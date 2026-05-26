@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync": "node --env-file=.env --env-file=.env.local scripts/sync-cowork.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

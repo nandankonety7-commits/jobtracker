@@ -143,6 +143,7 @@ export default function App() {
   const [showPaste, setShowPaste]     = useState(false)
   const [pasteText, setPasteText]     = useState('')
   const importRef                     = useRef(null)
+  const importMDRef                   = useRef(null)
 
   const showToast = (msg, type='info') => {
     setToast({msg,type})
@@ -328,6 +329,64 @@ export default function App() {
     showToast('job-tracker.md downloaded — save it to your Cowork workspace folder','success')
   }
 
+  const handleImportMarkdown = (e) => {
+    const file = e.target.files[0]; if (!file) return
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      try {
+        const STATUS_IN = {
+          'Networking':'Researching','Informational Interview':'Researching',
+          'Phone Screen':'Applied','Applied':'Applied',
+          'Interview Round 1':'Interview – R1','Interview Round 2':'Interview – R2+',
+          'Interview Round Final':'Interview – Final',
+          'Offer':'Offer','Rejected':'Rejected','Withdrawn':'Archived',
+        }
+        const text = ev.target.result
+        const entries = []
+        const chunks = text.split(/\n(?=## )/)
+        for (const chunk of chunks) {
+          if (!chunk.startsWith('## ')) continue
+          const lines = chunk.split('\n')
+          const title = lines[0].replace(/^## /,'').trim()
+          if (title.toLowerCase()==='archived') continue
+          const dashIdx = title.indexOf(' — ')
+          const org  = dashIdx>=0 ? title.slice(0,dashIdx).trim() : title.trim()
+          const role = dashIdx>=0 ? title.slice(dashIdx+3).trim() : ''
+          if (!org) continue
+          const f = {}
+          for (const line of lines.slice(1)) {
+            const m = line.match(/^- \*\*([^*]+)\*\*:\s*(.+)$/)
+            if (m) f[m[1].trim()] = m[2].trim()
+          }
+          const followUps = []
+          if (f['Follow-Up Due']) {
+            const date  = f['Follow-Up Due'].replace(/\s*\(.*\)/,'').trim()
+            const label = f['Next Action'] || 'Follow up'
+            followUps.push({ id:'fu_'+Date.now()+'_'+Math.random().toString(36).slice(2), date, label })
+          }
+          entries.push({
+            org, role, type:'Other',
+            status: STATUS_IN[f['Status']] || 'Researching',
+            appliedDate: f['Date Added'] || '', deadline: f['Deadline'] || '',
+            followUps, interviewDate:'', interviewNotes:'', recurringReminder:'none',
+            link: f['Posting Link']||'', notes: f['Notes']||'',
+            researchNotes: f['Research Notes']||'',
+            coverLetterLink: f['Cover Letter']||'', resumeLink: f['Resume']||'',
+          })
+        }
+        if (entries.length===0) { showToast('No entries found in file','info'); return }
+        const existing = new Set(opps.map(o=>`${o.org}||${o.role}`))
+        const toAdd = entries.filter(e=>!existing.has(`${e.org}||${e.role}`))
+        if (toAdd.length===0) { showToast('All entries already in tracker','info'); return }
+        const created = await Promise.all(toAdd.map(o=>createOpp(session.user.id,o)))
+        setOpps(prev=>[...prev,...created])
+        showToast(`Added ${created.length} entr${created.length===1?'y':'ies'} from Cowork!`,'success')
+      } catch(err) { showToast('Parse error: '+err.message,'error') }
+    }
+    reader.readAsText(file)
+    e.target.value=''
+  }
+
   const handleImport = (e) => {
     const file = e.target.files[0]; if (!file) return
     const reader = new FileReader()
@@ -474,8 +533,10 @@ export default function App() {
 
         {/* Export/Import/Paste */}
         <input ref={importRef} type="file" accept=".json" onChange={handleImport} style={{display:'none'}}/>
+        <input ref={importMDRef} type="file" accept=".md" onChange={handleImportMarkdown} style={{display:'none'}}/>
         <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12}} onClick={handleExport}>↓ Export</button>
         <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12,borderColor:'#34D399',color:'#34D399'}} onClick={handleExportMarkdown} title="Export job-tracker.md for Cowork skill">↓ Cowork</button>
+        <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12,borderColor:'#34D399',color:'#34D399'}} onClick={()=>importMDRef.current.click()} title="Import from job-tracker.md">↑ Cowork</button>
         <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12}} onClick={()=>importRef.current.click()}>↑ Import</button>
         <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12,borderColor:'#A78BFA',color:'#A78BFA'}} onClick={()=>setShowPaste(true)}>⚡ Paste</button>
         <button className="btn-primary" onClick={openAdd}>+ Add</button>

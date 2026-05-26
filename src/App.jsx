@@ -287,6 +287,47 @@ export default function App() {
     showToast('Backup downloaded!','success')
   }
 
+  const handleExportMarkdown = () => {
+    const statusMap = {
+      'Researching':'Networking', 'Applied':'Applied', 'Following Up':'Applied',
+      'Interview – R1':'Interview Round 1', 'Interview – R2+':'Interview Round 2',
+      'Interview – Final':'Interview Round Final',
+      'Offer':'Offer', 'Rejected':'Rejected', 'Archived':'Withdrawn',
+    }
+    const active = opps.filter(o=>o.status!=='Archived')
+    const archived = opps.filter(o=>o.status==='Archived')
+    const renderOpp = (o) => {
+      const nextFu = (o.followUps||[]).filter(f=>f.date).sort((a,b)=>new Date(a.date)-new Date(b.date))[0]
+      const lines = [
+        `## ${o.org}${o.role?' — '+o.role:''}`,
+        `- **Date Added**: ${o.appliedDate||TODAY}`,
+        `- **Status**: ${statusMap[o.status]||o.status}`,
+        o.deadline ? `- **Deadline**: ${o.deadline}` : null,
+        nextFu ? `- **Follow-Up Due**: ${nextFu.date}${nextFu.label?' ('+nextFu.label+')':''}` : null,
+        nextFu ? `- **Next Action**: Follow up by ${nextFu.date}` : `- **Next Action**: Review and apply`,
+        o.link ? `- **Posting Link**: ${o.link}` : null,
+        o.coverLetterLink ? `- **Cover Letter**: ${o.coverLetterLink}` : null,
+        o.resumeLink ? `- **Resume**: ${o.resumeLink}` : null,
+        o.researchNotes ? `- **Research Notes**: ${o.researchNotes.replace(/\n/g,' ')}` : null,
+        o.notes ? `- **Notes**: ${o.notes.replace(/\n/g,' ')}` : null,
+        o.interviewNotes ? `- **Interview Notes**: ${o.interviewNotes.replace(/\n/g,' ')}` : null,
+      ].filter(Boolean)
+      return lines.join('\n')
+    }
+    const md = [
+      '# Job Application Tracker',
+      `\n**Last Updated**: ${TODAY}\n`,
+      active.length===0 ? '\n> No active applications.' : active.map(renderOpp).join('\n\n'),
+      archived.length>0 ? '\n---\n\n## Archived\n\n'+archived.map(renderOpp).join('\n\n') : ''
+    ].join('\n')
+    const blob = new Blob([md],{type:'text/markdown'})
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href=url; a.download='job-tracker.md'; a.click()
+    URL.revokeObjectURL(url)
+    showToast('job-tracker.md downloaded — save it to your Cowork workspace folder','success')
+  }
+
   const handleImport = (e) => {
     const file = e.target.files[0]; if (!file) return
     const reader = new FileReader()
@@ -434,6 +475,7 @@ export default function App() {
         {/* Export/Import/Paste */}
         <input ref={importRef} type="file" accept=".json" onChange={handleImport} style={{display:'none'}}/>
         <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12}} onClick={handleExport}>↓ Export</button>
+        <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12,borderColor:'#34D399',color:'#34D399'}} onClick={handleExportMarkdown} title="Export job-tracker.md for Cowork skill">↓ Cowork</button>
         <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12}} onClick={()=>importRef.current.click()}>↑ Import</button>
         <button className="btn-ghost" style={{padding:'7px 13px',fontSize:12,borderColor:'#A78BFA',color:'#A78BFA'}} onClick={()=>setShowPaste(true)}>⚡ Paste</button>
         <button className="btn-primary" onClick={openAdd}>+ Add</button>
